@@ -309,14 +309,7 @@ index 4af6c71370ff..2d6ad9f9718d 100644
  
  	if(chip->sram_wq)
  		destroy_workqueue(chip->sram_wq);
-@@ -1325,6 +1370,7 @@ static void qcom_fg_remove(struct platform_device *pdev)
- static const struct of_device_id fg_match_id_table[] = {
- 	{ .compatible = "qcom,pmi8994-fg", .data = &ops_fg },
- 	{ .compatible = "qcom,pmi8998-fg", .data = &ops_fg_gen3 },
-+	{ .compatible = "qcom,pm8150b-fg", .data = &ops_fg_gen4 },
- 	{ /* sentinel */ }
- };
- MODULE_DEVICE_TABLE(of, fg_match_id_table);
+
 -- 
 2.49.0
 
