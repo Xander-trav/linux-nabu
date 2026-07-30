@@ -1159,6 +1159,33 @@ index 000000000000..4af6c71370ff
 +	return NOTIFY_OK;
 +}
 +
++/* Replacement for power_supply_get_by_phandle removed in kernel 6.18 */
++static struct power_supply *qcom_fg_get_psy_by_phandle(struct device_node *np,
++							const char *prop)
++{
++	struct power_supply *psy = NULL;
++	struct device_node *phandle_np;
++
++	phandle_np = of_parse_phandle(np, prop, 0);
++	if (phandle_np) {
++		struct class_dev_iter iter;
++		struct device *dev;
++
++		class_dev_iter_init(&iter, power_supply_class, NULL, NULL);
++		while ((dev = class_dev_iter_next(&iter))) {
++			struct power_supply *p = dev_get_drvdata(dev);
++			if (p->dev && p->dev->of_node == phandle_np) {
++				psy = p;
++				break;
++			}
++		}
++		class_dev_iter_exit(&iter);
++		of_node_put(phandle_np);
++	}
++
++	return psy ?: ERR_PTR(-ENODEV);
++}
++
 +static int qcom_fg_probe(struct platform_device *pdev)
 +{
 +	struct power_supply_config supply_config = {};
@@ -1226,7 +1253,7 @@ index 000000000000..4af6c71370ff
 +	}
 +
 +	supply_config.drv_data = chip;
-+	supply_config.of_node = pdev->dev.of_node;
++	supply_config.fwnode = dev_fwnode(&pdev->dev);
 +
 +	chip->batt_psy = devm_power_supply_register(chip->dev,
 +			&batt_psy_desc, &supply_config);
@@ -1329,7 +1356,7 @@ index 000000000000..4af6c71370ff
 +	}
 +
 +	/* Optional: Get charger power supply for status checking */
-+	chip->chg_psy = power_supply_get_by_phandle(chip->dev->of_node,
++	chip->chg_psy = qcom_fg_get_psy_by_phandle(chip->dev->of_node,
 +							"power-supplies");
 +	if (IS_ERR(chip->chg_psy)) {
 +		ret = PTR_ERR(chip->chg_psy);
@@ -1390,4 +1417,3 @@ index 000000000000..4af6c71370ff
 +MODULE_LICENSE("GPL v2");
 -- 
 2.49.0
-

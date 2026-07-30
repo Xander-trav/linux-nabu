@@ -1577,7 +1577,7 @@ index 000000000000..f4c386bf2a9f
 +static int ln8000_psy_register(struct ln8000_info *info)
 +{
 +    info->psy_cfg.drv_data = info;
-+    info->psy_cfg.of_node  = info->client->dev.of_node;
++    info->psy_cfg.fwnode = dev_fwnode(&info->client->dev);
 +    info->psy_desc.name 		= "ln8000-charger";
 +    info->psy_desc.type 		= POWER_SUPPLY_TYPE_MAINS;
 +    info->psy_desc.properties	= ln8000_charger_props;
@@ -1631,6 +1631,33 @@ index 000000000000..f4c386bf2a9f
 +	}
 +
 +	return NOTIFY_OK;
++}
++
++/* Replacement for power_supply_get_by_phandle removed in kernel 6.18 */
++static struct power_supply *ln8000_get_psy_by_phandle(struct device_node *np,
++								const char *prop)
++{
++	struct power_supply *psy = NULL;
++	struct device_node *phandle_np;
++
++	phandle_np = of_parse_phandle(np, prop, 0);
++	if (phandle_np) {
++		struct class_dev_iter iter;
++		struct device *dev;
++
++		class_dev_iter_init(&iter, power_supply_class, NULL, NULL);
++		while ((dev = class_dev_iter_next(&iter))) {
++			struct power_supply *p = dev_get_drvdata(dev);
++			if (p->dev && p->dev->of_node == phandle_np) {
++				psy = p;
++				break;
++			}
++		}
++		class_dev_iter_exit(&iter);
++		of_node_put(phandle_np);
++	}
++
++	return psy ?: ERR_PTR(-ENODEV);
 +}
 +
 +static int ln8000_probe(struct i2c_client *client)
@@ -1710,7 +1737,7 @@ index 000000000000..f4c386bf2a9f
 +
 +    determine_initial_status(info);
 +
-+    info->typec_psy = power_supply_get_by_phandle(info->dev->of_node,
++    info->typec_psy = ln8000_get_psy_by_phandle(info->dev->of_node,
 +							"usb-tcpm");
 +	if (IS_ERR(info->typec_psy)) {
 +		ret = PTR_ERR(info->typec_psy);
@@ -1848,4 +1875,3 @@ index 000000000000..f4c386bf2a9f
 \ No newline at end of file
 -- 
 2.49.0
-

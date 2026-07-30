@@ -41,7 +41,7 @@ index f4c386bf2a9f..da3d78187a80 100644
 +    info->dev = &client->dev;
 +    info->client = client;
 +
-+    info->typec_psy = power_supply_get_by_phandle(info->dev->of_node,"usb-tcpm");
++    info->typec_psy = ln8000_get_psy_by_phandle(info->dev->of_node, "usb-tcpm");
 +
 +    if(info->typec_psy == NULL){
 +	ret = -(EPROBE_DEFER);
@@ -111,4 +111,3 @@ index f4c386bf2a9f..da3d78187a80 100644
 +MODULE_VERSION("0.3.0");
 -- 
 2.49.0
-
