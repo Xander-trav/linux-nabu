@@ -4,11 +4,11 @@
 buildarch=8
 
 pkgbase=linux-nabu
+pkgver=6.18.41
+pkgrel=1
 _srcname="linux-${pkgver%.*}"
 _kernelname=${pkgbase#linux}
 _desc="AArch64 Xiaomi Pad 5"
-pkgver=6.18.41
-pkgrel=1
 arch=('aarch64')
 url="http://www.kernel.org/"
 license=('GPL-2.0-only')
