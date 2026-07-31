@@ -7,6 +7,11 @@ name: Build Test Package
 on:
   workflow_dispatch:
 
+env:
+  # Arch Linux ARM mirror (fl.us is unreachable from runners, use working one)
+  MIRROR: "http://os.archlinuxarm.org/$arch/$repo"
+  MIRROR_HOST: "http://os.archlinuxarm.org"
+
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
@@ -23,15 +28,14 @@ jobs:
         run: |
           # Test which mirrors work from this runner
           for url in \
+            "$MIRROR_HOST" \
             "http://ca.us.mirror.archlinuxarm.org" \
             "http://nj.us.mirror.archlinuxarm.org" \
-            "http://os.archlinuxarm.org" \
             "http://archlinuxarm.org"; do
             code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>&1 || echo "FAIL")
             echo "$url -> $code"
           done
-          # Use os.archlinuxarm.org (it redirects to a working mirror)
-          echo 'Server = http://os.archlinuxarm.org/$arch/$repo' | \
+          echo "Server = $MIRROR" | \
             sudo tee /etc/pacman.d/mirrorlist
 
       - name: Update system
