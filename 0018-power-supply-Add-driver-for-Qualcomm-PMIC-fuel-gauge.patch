@@ -67,7 +67,7 @@ new file mode 100644
 index 000000000000..4af6c71370ff
 --- /dev/null
 +++ b/drivers/power/supply/qcom_fg.c
-@@ -0,0 +1,1320 @@
+@@ -0,0 +1,1328 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/* Copyright (c) 2020, The Linux Foundation. All rights reserved. */
 +
@@ -1163,27 +1163,7 @@ index 000000000000..4af6c71370ff
 +static struct power_supply *qcom_fg_get_psy_by_phandle(struct device_node *np,
 +							const char *prop)
 +{
-+	struct power_supply *psy = NULL;
-+	struct device_node *phandle_np;
-+
-+	phandle_np = of_parse_phandle(np, prop, 0);
-+	if (phandle_np) {
-+		struct class_dev_iter iter;
-+		struct device *dev;
-+
-+		class_dev_iter_init(&iter, power_supply_class, NULL, NULL);
-+		while ((dev = class_dev_iter_next(&iter))) {
-+			struct power_supply *p = dev_get_drvdata(dev);
-+			if (p->dev && p->dev->of_node == phandle_np) {
-+				psy = p;
-+				break;
-+			}
-+		}
-+		class_dev_iter_exit(&iter);
-+		of_node_put(phandle_np);
-+	}
-+
-+	return psy ?: ERR_PTR(-ENODEV);
++	return power_supply_get_by_reference(&np->fwnode, prop);
 +}
 +
 +static int qcom_fg_probe(struct platform_device *pdev)
