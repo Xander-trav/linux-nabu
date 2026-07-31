@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 env:
-  # Arch Linux ARM mirror (fl.us is unreachable and os. redirects to flaky host)
-  MIRROR: "http://ca.us.mirror.archlinuxarm.org/$arch/$repo"
-  MIRROR_HOST: "http://ca.us.mirror.archlinuxarm.org"
+  # Arch Linux ARM mirrors (fl.us unreachable; os. redirects to flaky host).
+  # Multiple servers = pacman falls back if one lags/misses a package.
+  MIRROR_HOSTS: "http://ca.us.mirror.archlinuxarm.org http://nj.us.mirror.archlinuxarm.org"
 
 jobs:
   build:
@@ -24,24 +24,27 @@ jobs:
       image: ghcr.io/rodriguezst/archlinux-builder:latest
 
     steps:
-      - name: Fix mirrorlist (fl.us mirror is unreachable from runner)
+      - name: Fix mirrorlist
         run: |
-          # Test which mirrors work from this runner
-          for url in \
-            "$MIRROR_HOST" \
-            "http://ca.us.mirror.archlinuxarm.org" \
-            "http://nj.us.mirror.archlinuxarm.org" \
-            "http://archlinuxarm.org"; do
+          # Test which mirrors are reachable from this runner
+          for url in $MIRROR_HOSTS; do
             code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>&1 || echo "FAIL")
             echo "$url -> $code"
           done
-          echo "Server = $MIRROR" | \
-            sudo tee /etc/pacman.d/mirrorlist
+          # Write all mirrors so pacman falls back if one lags
+          for url in $MIRROR_HOSTS; do
+            echo "Server = $url/\$arch/\$repo"
+          done | sudo tee /etc/pacman.d/mirrorlist
 
       - name: Update system
         run: |
-          for i in 1 2 3; do
-            sudo pacman -Syu --noconfirm --retry 3 && break
+          n=0
+          until sudo pacman -Syu --noconfirm; do
+            n=$((n+1))
+            if [ $n -ge 3 ]; then
+              echo "pacman -Syu failed after 3 attempts" >&2
+              exit 1
+            fi
             sleep 5
           done
   
@@ -62,8 +65,13 @@ jobs:
 
       - name: Generate secure boot test keys
         run: |
-          for i in 1 2 3; do
-            sudo pacman -S --needed --noconfirm --retry 3 openssl && break
+          n=0
+          until sudo pacman -S --needed --noconfirm openssl; do
+            n=$((n+1))
+            if [ $n -ge 3 ]; then
+              echo "pacman failed to install openssl after 3 attempts" >&2
+              exit 1
+            fi
             sleep 5
           done
           openssl genrsa -out sb.key 2048
