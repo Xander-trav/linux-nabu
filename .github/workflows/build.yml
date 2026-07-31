@@ -19,6 +19,19 @@ jobs:
       image: ghcr.io/rodriguezst/archlinux-builder:latest
 
     steps:
+      - name: Test mirror connectivity
+        run: |
+          for url in \
+            "http://fl.us.mirror.archlinuxarm.org" \
+            "http://os.archlinuxarm.org" \
+            "http://archlinuxarm.org" \
+            "http://mirror.archlinuxarm.org"; do
+            code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>&1 || echo "FAIL")
+            echo "$url -> $code"
+          done
+          echo "---"
+          cat /etc/pacman.d/mirrorlist 2>/dev/null || echo "no mirrorlist found"
+
       - name: Update system
         run: sudo pacman -Syu --noconfirm
   
