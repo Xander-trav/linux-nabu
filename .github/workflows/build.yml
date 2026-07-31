@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 env:
-  # Arch Linux ARM mirror (fl.us is unreachable from runners, use working one)
-  MIRROR: "http://os.archlinuxarm.org/$arch/$repo"
-  MIRROR_HOST: "http://os.archlinuxarm.org"
+  # Arch Linux ARM mirror (fl.us is unreachable and os. redirects to flaky host)
+  MIRROR: "http://ca.us.mirror.archlinuxarm.org/$arch/$repo"
+  MIRROR_HOST: "http://ca.us.mirror.archlinuxarm.org"
 
 jobs:
   build:
