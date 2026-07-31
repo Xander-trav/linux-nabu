@@ -21,11 +21,25 @@ jobs:
     steps:
       - name: Fix mirrorlist (fl.us mirror is unreachable from runner)
         run: |
+          # Test which mirrors work from this runner
+          for url in \
+            "http://ca.us.mirror.archlinuxarm.org" \
+            "http://nj.us.mirror.archlinuxarm.org" \
+            "http://os.archlinuxarm.org" \
+            "http://archlinuxarm.org"; do
+            code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "$url" 2>&1 || echo "FAIL")
+            echo "$url -> $code"
+          done
+          # Use os.archlinuxarm.org (it redirects to a working mirror)
           echo 'Server = http://os.archlinuxarm.org/$arch/$repo' | \
             sudo tee /etc/pacman.d/mirrorlist
 
       - name: Update system
-        run: sudo pacman -Syu --noconfirm
+        run: |
+          for i in 1 2 3; do
+            sudo pacman -Syu --noconfirm --retry 3 && break
+            sleep 5
+          done
   
       - name: Setup git
         run: |
@@ -44,7 +58,10 @@ jobs:
 
       - name: Generate secure boot test keys
         run: |
-          sudo pacman -S --needed --noconfirm openssl
+          for i in 1 2 3; do
+            sudo pacman -S --needed --noconfirm --retry 3 openssl && break
+            sleep 5
+          done
           openssl genrsa -out sb.key 2048
           openssl req -new -x509 -key sb.key -out sb.crt -days 365 \
             -subj "/C=US/ST=Test/L=Test/O=GitHub Actions Test/CN=Test SB Certificate"
